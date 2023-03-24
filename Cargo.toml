@@ -3,6 +3,10 @@ name = "graphql-cli"
 version = "0.1.0"
 edition = "2021"
 
+description = "A simple cli tool to make graphql request."
+license = "MIT"
+repository = "https://github.com/jrdeng/graphql-cli"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
