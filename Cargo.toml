@@ -1,11 +1,11 @@
 [package]
-name = "graphql-cli"
+name = "graphquery"
 version = "0.1.0"
 edition = "2021"
 
 description = "A simple cli tool to make graphql request."
 license = "MIT"
-repository = "https://github.com/jrdeng/graphql-cli"
+repository = "https://github.com/jrdeng/graphquery"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

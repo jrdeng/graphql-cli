@@ -1,4 +1,4 @@
-# graphql-cli
+# graphquery
 
 A simple cli tool to make graphql request to specified server.
 
@@ -6,7 +6,7 @@ A simple cli tool to make graphql request to specified server.
 
 Command and options:
 ```
-Usage: graphql-cli.exe [OPTIONS] --url <API_URL> --token <TOKEN>
+Usage: graphquery.exe [OPTIONS] --url <API_URL> --token <TOKEN>
 
 Options:
   -u, --url <API_URL>         URL of GraphQL API. for example: https://<your-server.com>/api/graphql

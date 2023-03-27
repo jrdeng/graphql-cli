@@ -237,7 +237,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "graphql-cli"
+name = "graphquery"
 version = "0.1.0"
 dependencies = [
  "clap",
