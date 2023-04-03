@@ -59,7 +59,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     debug!("body: {}", body);
     let resp = client
         .post(url)
-        .header("User-Agent", "my-graphql-cli")
+        .header("User-Agent", "graphquery")
         .header("Authorization", auth)
         .header("Content-Type", "application/json")
         .body(body)
