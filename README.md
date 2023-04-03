@@ -19,13 +19,19 @@ Options:
 
 ### Example
 
-Query with specified string:
+#### Query with specified string:
 ```
 cargo run -- --url=https://api.github.com/graphql --token=${YOUR_TOKEN} --query="query{viewer {login}}"
 ```
 
 
-Query can be in a file:
+#### Query can be in a file:
 ```
 cargo run -- --url=https://api.github.com/graphql --token=${YOUR_TOKEN} --file=graphql/github_issues.graphql --output=output.json
 ```
+
+#### Query can have some variables that can be set dynamically:
+```
+cargo run -- --url=https://api.github.com/graphql --token=${YOUR_TOKEN} --file=graphql/github_issues_with_x.graphql --extra owner=jrdeng --extra name=Playground
+```
+The "--extra" arguments will be used to replace some varialbe defined in the query string. (in the form: "`$x:key`". please check the example query file in the above example for details.)

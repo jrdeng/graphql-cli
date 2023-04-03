@@ -1,7 +1,7 @@
 use std::{fs, process};
 
 use clap::Parser;
-use log::{error, debug};
+use log::{debug, error};
 
 #[derive(Parser, Debug)]
 struct Args {
@@ -24,6 +24,10 @@ struct Args {
     /// Output file to store the query result. The result is echo to std out by default
     #[arg(short, long, value_name = "OUTPUT_FILE")]
     output: Option<String>,
+
+    /// Extra arguments(multiple) to be used in graphql query.
+    #[arg(short = 'x', long = "extra")]
+    extras: Option<Vec<String>>,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -57,6 +61,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     debug!("body: {}", body);
+
+    // handle extra arguments
+    // "$x:key" in query json will be replaced by the "value" from extra argument: -x key=value
+    if args.extras != None {
+        for extra in args.extras.unwrap() {
+            let kv: Vec<&str> = extra.split("=").collect();
+            if kv.len() != 2 {
+                error!("Wrong format in extra argument: {}", extra);
+                process::exit(-3);
+            }
+            let key_to_be_replaced = format!("$x:{}", kv[0]);
+            if body.contains(&key_to_be_replaced) {
+                body = body.replace(&key_to_be_replaced, kv[1]);
+            } else {
+                error!("Extra argument key doesn't exist: {}", kv[0]);
+                process::exit(-3);
+            }
+        }
+        debug!("body after replace extras: {}", body);
+    }
+
     let resp = client
         .post(url)
         .header("User-Agent", "graphquery")
@@ -72,7 +97,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         match fs::write(args.output.clone().unwrap(), &resp_text) {
             Ok(_) => {}
             Err(err) => {
-                error!("Failed to write file {}: {}", args.output.clone().unwrap(), err);
+                error!(
+                    "Failed to write file {}: {}",
+                    args.output.clone().unwrap(),
+                    err
+                );
                 println!("Query result:");
                 println!("{}", &resp_text);
             }
@@ -83,5 +112,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn query_to_json_str(query: &String) -> String {
-    format!("{{\"query\": \"{}\"}}", query.replace("\n", "").replace("\r", "").replace("\"", "\\\""))
+    format!(
+        "{{\"query\": \"{}\"}}",
+        query
+            .replace("\n", "")
+            .replace("\r", "")
+            .replace("\"", "\\\"")
+    )
 }
