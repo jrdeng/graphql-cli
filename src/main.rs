@@ -1,4 +1,4 @@
-use std::{fs, process};
+use std::{collections::HashMap, fs, process};
 
 use clap::Parser;
 use log::{debug, error};
@@ -41,82 +41,69 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     debug!("{:#?}", args);
 
-    let client = reqwest::blocking::Client::new();
-    let url = args.url;
-    let auth = format!("Bearer {}", args.token);
-    let mut body = if args.query != None {
-        query_to_json_str(&args.query.unwrap())
-    } else {
-        String::from("")
-    };
-    if body.is_empty() {
-        match fs::read_to_string(args.file.clone().unwrap()) {
-            Ok(data) => {
-                body = query_to_json_str(&data);
-            }
-            Err(err) => {
-                error!("Failed to read query string from file. err: {}", err);
-                process::exit(-2);
-            }
-        }
-    }
-    debug!("body: {}", body);
-
     // handle extra arguments
     // "$x:key" in query json will be replaced by the "value" from extra argument: -x key=value
+    let mut extra_args: Option<HashMap<String, String>> = None;
     if args.extras != None {
+        let mut extra_args_hash = HashMap::new();
         for extra in args.extras.unwrap() {
             let kv: Vec<&str> = extra.split("=").collect();
             if kv.len() != 2 {
                 error!("Wrong format in extra argument: {}", extra);
-                process::exit(-3);
+                process::exit(-2);
             }
-            let key_to_be_replaced = format!("$x:{}", kv[0]);
-            if body.contains(&key_to_be_replaced) {
-                body = body.replace(&key_to_be_replaced, kv[1]);
-            } else {
-                error!("Extra argument key doesn't exist: {}", kv[0]);
-                process::exit(-3);
-            }
+            extra_args_hash.insert(kv[0].to_owned(), kv[1].to_owned());
         }
-        debug!("body after replace extras: {}", body);
+        debug!("extras: {:?}", extra_args_hash);
+        extra_args = Some(extra_args_hash);
     }
 
-    let resp = client
-        .post(url)
-        .header("User-Agent", "graphquery")
-        .header("Authorization", auth)
-        .header("Content-Type", "application/json")
-        .body(body)
-        .send()?;
-
-    if args.output == None {
-        println!("{}", resp.text().unwrap());
+    let resp: Result<String, String>;
+    if let Some(query_str) = args.query {
+        if extra_args != None {
+            resp = graphquery_lib::query_with_args(
+                &args.url,
+                &args.token,
+                &query_str,
+                &extra_args.unwrap(),
+            );
+        } else {
+            resp = graphquery_lib::query(&args.url, &args.token, &query_str);
+        }
     } else {
-        let resp_text = resp.text().unwrap();
-        match fs::write(args.output.clone().unwrap(), &resp_text) {
-            Ok(_) => {}
-            Err(err) => {
-                error!(
-                    "Failed to write file {}: {}",
-                    args.output.clone().unwrap(),
-                    err
-                );
-                println!("Query result:");
-                println!("{}", &resp_text);
+        if extra_args != None {
+            resp = graphquery_lib::query_file_with_args(
+                &args.url,
+                &args.token,
+                &args.file.unwrap(),
+                &extra_args.unwrap(),
+            );
+        } else {
+            resp = graphquery_lib::query_file(&args.url, &args.token, &args.file.unwrap());
+        }
+    }
+
+    if let Ok(resp_text) = resp {
+        if args.output == None {
+            println!("{}", resp_text);
+        } else {
+            match fs::write(args.output.clone().unwrap(), &resp_text) {
+                Ok(_) => {}
+                Err(err) => {
+                    error!(
+                        "Failed to write file {}: {}",
+                        args.output.clone().unwrap(),
+                        err
+                    );
+                    println!("Query result:");
+                    println!("{}", &resp_text);
+                }
             }
         }
+    } else {
+        error!("Failed to send query");
+        process::exit(-3);
     }
 
     Ok(())
-}
-
-fn query_to_json_str(query: &String) -> String {
-    format!(
-        "{{\"query\": \"{}\"}}",
-        query
-            .replace("\n", "")
-            .replace("\r", "")
-            .replace("\"", "\\\"")
-    )
 }
