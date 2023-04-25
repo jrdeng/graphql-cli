@@ -1,6 +1,6 @@
 [package]
 name = "graphquery"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 
 description = "A simple cli tool to make graphql request."
